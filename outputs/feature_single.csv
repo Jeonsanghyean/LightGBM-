@@ -1,0 +1,5 @@
+﻿group,features,AP_internal_test
+고액 결제,amt_ratio,0.1968232862550091
+반복 결제,"count_5min, count_15min, count_60min",0.026284920087512462
+이상 시간대,hour_rarity,0.054334074540215535
+(기준) 사기 비율,-,0.006416386463892402

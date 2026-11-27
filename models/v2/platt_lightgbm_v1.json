@@ -1,0 +1,7 @@
+{
+  "a": 0.9807808984284115,
+  "b": -1.9508026115179913,
+  "fit": "valid 앞 절반",
+  "model": "models/LightGBM.joblib",
+  "formula": "p = 1/(1+exp(-(a*logit(s)+b)))"
+}

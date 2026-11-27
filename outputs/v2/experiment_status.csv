@@ -1,0 +1,10 @@
+﻿experiment,country,description,status
+E1,US,"미국 단독 (v1 6개 / 확장 전체), 3종",측정
+E4,US,위치 특징 추가 전후 (시뮬레이터 합성 좌표 조건),측정
+E5,US,특징군 A·B·C·D 제거,측정
+E4b,US,D군 분해: 시간 간격 vs 거리 (--e4b로 실행),측정
+E2,KR,"한국 단독, 3종",미측정(한국 데이터 미확보)
+E3,KR,"국가 간 일반화 US→KR, KR→US (공통 특징 amt_ratio, count_prev_hour_bucket, count_same_day_prior, hour_rarity, insufficient_history)",미측정(한국 데이터 미확보)
+E4,KR,한국 위치(지역) 특징 추가 전후,미측정(한국 데이터 미확보)
+E5,KR,한국 특징군 제거,미측정(한국 데이터 미확보)
+E6,KR,한국 이상거래 유형별 Recall (선택),미측정(한국 데이터 미확보)

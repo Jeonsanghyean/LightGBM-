@@ -1,0 +1,14 @@
+# 설계서 표 10: 로컬 전용 실행, 오류 상세(행 값 포함 가능) 숨김, 사용 통계 외부 전송 끔
+[server]
+address = "localhost"
+headless = true
+
+[browser]
+gatherUsageStats = false
+
+[client]
+showErrorDetails = false
+toolbarMode = "minimal"
+
+[logger]
+level = "warning"

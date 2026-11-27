@@ -1,0 +1,3 @@
+﻿file,rows,fraud,missing_required,duplicate_trans_num,duplicate_rows,start,end
+fraudTrain.csv,1296675,7506,0,0,0,2019-01-01 00:00:18,2020-06-21 12:13:37
+fraudTest.csv,555719,2145,0,0,0,2020-06-21 12:14:25,2020-12-31 23:59:34

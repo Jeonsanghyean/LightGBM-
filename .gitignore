@@ -1,0 +1,16 @@
+# 원본·대용량 데이터
+data/raw/
+data/features.parquet
+data/research/
+outputs/test_scores.parquet
+# AI-Hub 원본은 재배포 금지
+data/research/kr/
+# 개인 거래 (기본 저장소는 %LOCALAPPDATA%\CardFDS, 프로젝트 안에 두는 경우 대비)
+data/personal/
+__pycache__/
+.pytest_cache/
+# 공개 저장소에 올리지 않음: 개인 정보가 들어 있는 원본 문서, 로컬 설정, 데이터 파일
+*.hwp
+*.docx
+.claude/
+data/

@@ -1,0 +1,6 @@
+﻿source,feature,matched,checked
+us_sparkov,count_prev_hour_bucket,2000,2000
+us_sparkov,count_same_day_prior,2000,2000
+us_sparkov,dist_prev_km,1999,1999
+us_sparkov,gap_prev_min,1999,1999
+us_sparkov,same_merchant_24h,2000,2000

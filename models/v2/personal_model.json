@@ -1,0 +1,38 @@
+{
+  "features": [
+    "amt_ratio",
+    "count_5min",
+    "count_15min",
+    "count_60min",
+    "insufficient_history"
+  ],
+  "thresholds": {
+    "5": 0.7121008439052812,
+    "20": 0.35695561935241354,
+    "100": 0.11152034524353047
+  },
+  "platt": {
+    "a": 0.9856995186207459,
+    "b": -2.148847874517405
+  },
+  "train_ranges_1_99": {
+    "amt_ratio": [
+      0.0305108870050224,
+      12.339178722683597
+    ],
+    "count_5min": [
+      0.0,
+      1.0
+    ],
+    "count_15min": [
+      0.0,
+      1.0
+    ],
+    "count_60min": [
+      0.0,
+      2.0
+    ]
+  },
+  "trained_on": "US Sparkov train segment",
+  "pos_weight": 10
+}
