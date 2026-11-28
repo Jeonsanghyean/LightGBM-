@@ -63,7 +63,7 @@ elif choice == "kr":
         st.markdown(
             "1. AI-Hub에 로그인해 「이상 판별을 위한 금융거래 정보 및 사용자 패턴 합성데이터」를 신청합니다 (내국인만 신청 가능).\n"
             "2. 카드거래 CSV 16개와 데이터 설명서를 `data/research/kr/raw/`에 넣습니다.\n"
-            "3. 변환 스크립트는 2주차에 추가됩니다.\n\n"
+            "3. `python -m src.sources.aihub_card`, `python -m src.build_features_v2`를 차례로 실행합니다.\n\n"
             "AI-Hub 원본은 재배포하지 않습니다. 보고서에는 집계 결과만 싣습니다."
         )
 else:

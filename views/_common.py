@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import os
 
+import numpy as np
 import pandas as pd
 import streamlit as st
 
+from src import risk
 from src.features_ext import add_extended
 from src.store import PersonalStore
 
@@ -21,6 +23,7 @@ PRECISION_KO = {"second": "초 단위", "minute": "분 단위", "hour": "1시간
                 "exact": "정확한 좌표", "synthetic_point": "합성 좌표 (실제 매장 위치 아님)",
                 "province": "시도 단위", "country": "국가 단위", "none": "위치 없음"}
 MISSING = "데이터에 없음"
+US_SCORES = "outputs/test_scores.parquet"  # v1 실험이 만든 원본 Test 구간 점수 (화면 4와 같은 값)
 
 
 def source_picker() -> str:
@@ -43,7 +46,32 @@ def _load_research(src: str) -> pd.DataFrame | None:
     if src == "kr" and os.path.exists(f"{base}/extra.parquet"):
         ex = pd.read_parquet(f"{base}/extra.parquet", columns=["transaction_id", "region_code"])
         df = df.merge(ex, on="transaction_id", how="left")
+    if src == "us":
+        df = attach_us_scores(df)
     return df
+
+
+# [v2 변경 2026-11-28] 무엇을: 미국 거래에 v1 LightGBM 원본 Test 점수·위험 수준 연결
+#   왜: 화면 2의 위험도가 "미산출 (3주차)"로 남아 있었음 / 어떻게: 화면 4와 같은 점수 파일·임계값 사용.
+#   학습·검증 구간 거래는 점수를 내면 학습에 쓴 데이터를 평가하는 셈이라 비워 둔다.
+def attach_us_scores(df: pd.DataFrame, path: str = US_SCORES) -> pd.DataFrame:
+    df = df.drop(columns=["risk_level", "raw_score"], errors="ignore")
+    if not os.path.exists(path):
+        df["raw_score"], df["risk_level"] = np.nan, pd.Series(pd.NA, index=df.index, dtype="string")
+        return df
+    s = pd.read_parquet(path, columns=["trans_num", "score_LightGBM"]).rename(
+        columns={"trans_num": "transaction_id", "score_LightGBM": "raw_score"})
+    s["transaction_id"] = s["transaction_id"].astype(str)
+    t_high, t_watch = risk.thresholds()
+    s["risk_level"] = np.select([s["raw_score"] >= t_high, s["raw_score"] >= t_watch], ["높음", "주의"], "낮음")
+    return df.merge(s, on="transaction_id", how="left")
+
+
+def risk_text(v, src: str) -> str:
+    """위험 수준이 없을 때 이유를 출처별로 밝힌다."""
+    if isinstance(v, str) and v:
+        return v
+    return {"us": "미산출 (학습·검증 구간)", "personal": "미산출 (화면 6에서 분석 실행)"}.get(src, "미산출")
 
 
 def load(src: str) -> pd.DataFrame | None:

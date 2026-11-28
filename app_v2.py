@@ -4,7 +4,6 @@
 기존 연구 대시보드는 app.py(v1)로 그대로 실행된다.
 [설계 변경 2026-11-27] 화면 파일을 pages/가 아닌 views/에 둠.
   이유: pages/ 폴더는 Streamlit이 같은 폴더의 app.py(v1)에도 자동으로 붙여 v1 화면이 바뀌기 때문.
-화면 2~5는 2~3주차에 추가한다.
 """
 import streamlit as st
 

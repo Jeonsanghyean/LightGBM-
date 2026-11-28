@@ -21,7 +21,7 @@ python -m src.sources.sparkov      # 미국 데이터를 공통 스키마로 변
 python -m src.sources.aihub_card   # 한국 데이터 변환 (원본이 없으면 안내만 출력)
 python -m src.build_features_v2    # 신규 특징 생성 + 무작위 2,000건 재계산 검증 (약 2분)
 python -m src.experiments_country  # 국가별 실험 E1·E4·E5 (한국 E2·E3·E6은 데이터 확보 후), 약 10분
-python -m pytest -q                # 단위 테스트
+python -m pytest -q                # 단위·화면 테스트 (91개 + 실데이터 있을 때 1개)
 streamlit run app_v2.py            # 확장 대시보드 (화면 1~6)
 ```
 
@@ -43,6 +43,7 @@ streamlit run app_v2.py            # 확장 대시보드 (화면 1~6)
 | `src/risk.py` | 개인 거래 위험도: 점수·위험 수준·기여 요인·규칙 기반 확인 항목·분포 점검 |
 | `views/analysis.py`, `views/performance.py` | 화면 4(이상거래 분석)·5(모델 성능 비교) |
 | `app_v2.py`, `views/` | 확장 대시보드 화면 |
+| `tests/test_views.py` | 화면 1~6 자동 테스트 (가짜 데이터 임시 프로젝트, AppTest) |
 
 - **개인 거래 저장 위치**: `%LOCALAPPDATA%\CardFDS\personal.db`. 프로젝트(OneDrive) 밖에 있어 클라우드로 동기화되지 않습니다. 폴더는 처음 만들 때 현재 사용자 계정만 접근할 수 있게 권한을 설정합니다. 위치는 환경변수 `FDS_PERSONAL_DIR`로 바꿀 수 있습니다.
 - **한국 AI-Hub 데이터**: AI-Hub에 로그인해 「이상 판별을 위한 금융거래 정보 및 사용자 패턴 합성데이터」를 신청한 뒤(내국인만 가능), 카드거래 CSV와 데이터 설명서를 `data/research/kr/raw/`에 넣습니다. 재배포하지 않습니다.
