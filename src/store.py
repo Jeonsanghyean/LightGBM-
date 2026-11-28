@@ -6,6 +6,7 @@
 - 연구 데이터(data/research/)와 다른 파일·다른 폴더 → 학습 코드가 읽지 않는다.
 - 카드번호·CVC·인증정보 열은 테이블에 없다.
 - import_log에는 행 내용 없이 시각·파일 해시·건수만 남긴다.
+- feedback에는 사용자가 위험도 결과를 보고 남긴 확인 결과만 둔다. 모델 학습에 쓰지 않는다 (설계서 12장 2026-11-28).
 """
 from __future__ import annotations
 
@@ -21,6 +22,7 @@ import pandas as pd
 from .schema import COLUMNS, conform, validate
 
 SQL_TYPE = {"string": "TEXT", "Int64": "INTEGER", "float64": "REAL"}
+FEEDBACK = ("확인함", "사기였음")  # 확인함 = 본인 결제가 맞음
 
 
 def default_dir() -> Path:
@@ -61,6 +63,8 @@ class PersonalStore:
             con.execute(f"CREATE TABLE IF NOT EXISTS transactions ({cols})")
             con.execute("CREATE TABLE IF NOT EXISTS import_log (imported_at TEXT, file_sha256 TEXT, "
                         "rows_saved INTEGER, rows_error INTEGER, rows_duplicate INTEGER)")
+            con.execute("CREATE TABLE IF NOT EXISTS feedback (transaction_id TEXT PRIMARY KEY, status TEXT NOT NULL, "
+                        "noted_at TEXT NOT NULL)")
 
     # ---------------------------------------------------------------- 쓰기
     def insert(self, df: pd.DataFrame) -> int:
@@ -81,21 +85,47 @@ class PersonalStore:
         """편집된 행을 같은 transaction_id로 덮어쓴다."""
         if df.empty:
             return 0
-        self.delete(df["transaction_id"].tolist())
+        self.delete(df["transaction_id"].tolist(), keep_feedback=True)
         return self.insert(df)
 
-    def delete(self, ids: list[str]) -> int:
+    def delete(self, ids: list[str], keep_feedback: bool = False) -> int:
+        """거래 삭제. 덮어쓰기(replace)가 아니면 그 거래의 확인 결과도 함께 지운다."""
         if not ids:
             return 0
         with self._conn() as con:
             cur = con.executemany("DELETE FROM transactions WHERE transaction_id = ?", [(i,) for i in ids])
-            return cur.rowcount
+            n = cur.rowcount
+            if not keep_feedback:
+                con.executemany("DELETE FROM feedback WHERE transaction_id = ?", [(i,) for i in ids])
+            return n
+
+    def set_feedback(self, items: dict[str, str | None]) -> int:
+        """{거래 ID: '확인함' | '사기였음' | None}. None·빈 값은 기록을 지운다. 저장된 거래에만 남긴다."""
+        bad = {v for v in items.values() if v and v not in FEEDBACK}
+        if bad:
+            raise ValueError(f"허용되지 않는 확인 결과: {sorted(bad)}")
+        now = dt.datetime.now().isoformat(timespec="seconds")
+        with self._conn() as con:
+            known = {r[0] for r in con.execute("SELECT transaction_id FROM transactions")}
+            missing = set(items) - known
+            if missing:
+                raise ValueError(f"저장되지 않은 거래 ID {len(missing)}건")
+            con.executemany("DELETE FROM feedback WHERE transaction_id = ?", [(i,) for i, v in items.items() if not v])
+            con.executemany("INSERT OR REPLACE INTO feedback VALUES (?,?,?)",
+                            [(i, v, now) for i, v in items.items() if v])
+        return len(items)
+
+    def feedback(self) -> pd.DataFrame:
+        with self._conn() as con:
+            df = pd.read_sql_query("SELECT transaction_id, status, noted_at FROM feedback ORDER BY noted_at", con)
+        return df.astype("string")  # 비어 있어도 문자열 열 (빈 표는 숫자 열로 읽힘)
 
     def wipe(self) -> None:
         """전체 삭제. VACUUM으로 파일 안에 남은 페이지까지 정리한다."""
         with self._conn() as con:
             con.execute("DELETE FROM transactions")
             con.execute("DELETE FROM import_log")
+            con.execute("DELETE FROM feedback")
         con = self._conn()
         con.execute("VACUUM")
         con.close()

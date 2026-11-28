@@ -21,7 +21,7 @@ python -m src.sources.sparkov      # 미국 데이터를 공통 스키마로 변
 python -m src.sources.aihub_card   # 한국 데이터 변환 (원본이 없으면 안내만 출력)
 python -m src.build_features_v2    # 신규 특징 생성 + 무작위 2,000건 재계산 검증 (약 2분)
 python -m src.experiments_country  # 국가별 실험 E1·E4·E5 (한국 E2·E3·E6은 데이터 확보 후), 약 10분
-python -m pytest -q                # 단위·화면 테스트 (91개 + 실데이터 있을 때 1개)
+python -m pytest -q                # 단위·화면 테스트 (99개 + 실데이터 있을 때 1개)
 streamlit run app_v2.py            # 확장 대시보드 (화면 1~6)
 ```
 
@@ -33,7 +33,7 @@ streamlit run app_v2.py            # 확장 대시보드 (화면 1~6)
 | `src/sources/sparkov.py` | Sparkov → `data/research/us/transactions.parquet` (소유자 개인정보 형태 열 제거) |
 | `src/sources/personal.py` | 개인 거래 파일 읽기·열 자동 매핑·형식 정규화·중복 탐지 |
 | `src/privacy.py` | 카드번호(Luhn)·주민번호·민감 열 탐지 |
-| `src/store.py` | 개인 거래 SQLite 저장소 |
+| `src/store.py` | 개인 거래 SQLite 저장소 (거래, 업로드 기록, 사용자 확인 결과) |
 | `config/column_synonyms.yaml` | 카드 이용내역 열 이름 동의어 사전 |
 | `src/sources/aihub_card.py` | AI-Hub 카드거래 → 공통 스키마, 품질 보고서, 분기 단위 분할 |
 | `config/aihub_codebook.yaml` | AI-Hub 코드 의미표 (데이터 설명서 확인 전까지 비워 둠) |
