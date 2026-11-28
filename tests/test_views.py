@@ -176,3 +176,40 @@ def test_personal_analysis_shows_saved_feedback(project, with_feedback):
     assert not at.exception, [e.value for e in at.exception]
     expect = ("사기였음 1건", "미확인 7건") if with_feedback else ("사기였음 0건", "미확인 8건")
     assert any(all(e in c.value for e in expect) for c in at.caption)
+
+
+def test_performance_with_kr_results(project):
+    """화면 5: 한국 결과 파일이 있으면 E2·E3·E6 표와 국가별 E4·E5를 보여주고, 미국 표는 미국 행만 쓴다.
+    결과는 가짜 한국 행으로 만든 것이며 화면 동작 확인용이다."""
+    import shutil
+
+    from src import build_features_v2 as bf
+    from src import experiments_country as ec
+    from src.sources import aihub_card as kr
+    from tests.test_kr_experiments import fake_kr_raw, fake_us_seg
+
+    v2 = project / "outputs" / "v2"
+    v2.unlink()
+    shutil.copytree(ROOT / "outputs" / "v2", v2)
+    common, extra = kr.to_common(fake_kr_raw())
+    common["segment"] = kr.assign_segments(common).values
+    (project / bf.KR).mkdir(parents=True)
+    common.to_parquet(project / bf.KR / "transactions.parquet", index=False)
+    extra.to_parquet(project / bf.KR / "extra.parquet", index=False)
+    bf.build_kr()
+    seg = ec.load_kr(f"{bf.KR}/features_v2.parquet")
+    res = ec.run_kr(seg)
+    for name, k in (("e4_location_effect.csv", "loc"), ("e5_group_ablation.csv", "abl"), ("cost_thresholds_v2.csv", "thr")):
+        pd.concat([pd.read_csv(v2 / name), res[k]], ignore_index=True).to_csv(v2 / name, index=False)
+    res["perf"].to_csv(v2 / "e2_kr_performance.csv", index=False)
+    res["types"].to_csv(v2 / "e6_kr_type_recall.csv", index=False)
+    ec.run_cross(fake_us_seg(), seg).to_csv(v2 / "e3_cross_country.csv", index=False)
+
+    at = run("performance", "us", project)
+    assert not at.exception, [e.value for e in at.exception]
+    unmeasured = [i.value for i in at.info if "미측정" in i.value]
+    assert unmeasured == [], unmeasured
+    headers = [h.value for h in at.subheader]
+    for h in ("한국 모델 성능 (E2)", "국가 간 일반화 (E3)", "한국 이상거래 유형별 Recall (E6)"):
+        assert h in headers
+    assert at.radio(key="thr_country").options == ["US", "KR"]

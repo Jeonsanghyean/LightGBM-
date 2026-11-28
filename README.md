@@ -20,8 +20,8 @@ streamlit run app.py          # 7. 대시보드
 python -m src.sources.sparkov      # 미국 데이터를 공통 스키마로 변환 (build_data 이후)
 python -m src.sources.aihub_card   # 한국 데이터 변환 (원본이 없으면 안내만 출력)
 python -m src.build_features_v2    # 신규 특징 생성 + 무작위 2,000건 재계산 검증 (약 2분)
-python -m src.experiments_country  # 국가별 실험 E1·E4·E5 (한국 E2·E3·E6은 데이터 확보 후), 약 10분
-python -m pytest -q                # 단위·화면 테스트 (99개 + 실데이터 있을 때 1개)
+python -m src.experiments_country  # 국가별 실험 E1·E4·E5. 한국 특징 파일이 있으면 E2·E3·한국 E4·E5·E6도 실행, 약 10분
+python -m pytest -q                # 단위·화면 테스트 (107개 + 실데이터 있을 때 1개)
 streamlit run app_v2.py            # 확장 대시보드 (화면 1~6)
 ```
 
@@ -39,10 +39,11 @@ streamlit run app_v2.py            # 확장 대시보드 (화면 1~6)
 | `config/aihub_codebook.yaml` | AI-Hub 코드 의미표 (데이터 설명서 확인 전까지 비워 둠) |
 | `src/features_ext.py` | 신규 특징: 직전 시간대·같은 날 건수, 같은 가맹점 반복, 거리·속도·단시간 원거리, 지역 변화 |
 | `src/build_features_v2.py` | 출처별 특징 파일 생성과 재계산 검증 → `outputs/v2/feature_checks_v2.csv` |
-| `src/experiments_country.py` | 국가별 실험 → `outputs/v2/e1_*.csv`, `e4_*`, `e5_*`, `cost_thresholds_v2.csv`, `experiment_status.csv` |
+| `src/experiments_country.py` | 국가별 실험 → `outputs/v2/e1_*.csv`, `e4_*`, `e5_*`, `cost_thresholds_v2.csv`, `experiment_status.csv`. 한국 데이터가 있으면 `e2_kr_performance.csv`, `e3_cross_country.csv`, `e6_kr_type_recall.csv`도 만들고 e4·e5·비용·보정 파일에 KR 행을 추가 |
 | `src/risk.py` | 개인 거래 위험도: 점수·위험 수준·기여 요인·규칙 기반 확인 항목·분포 점검 |
 | `views/analysis.py`, `views/performance.py` | 화면 4(이상거래 분석)·5(모델 성능 비교) |
 | `app_v2.py`, `views/` | 확장 대시보드 화면 |
+| `tests/test_kr_experiments.py` | 한국 실험 E2·E3·E4·E5·E6 코드 테스트 (가짜 한국 원본 → 변환 → 특징 → 실험) |
 | `tests/test_views.py` | 화면 1~6 자동 테스트 (가짜 데이터 임시 프로젝트, AppTest) |
 
 - **개인 거래 저장 위치**: `%LOCALAPPDATA%\CardFDS\personal.db`. 프로젝트(OneDrive) 밖에 있어 클라우드로 동기화되지 않습니다. 폴더는 처음 만들 때 현재 사용자 계정만 접근할 수 있게 권한을 설정합니다. 위치는 환경변수 `FDS_PERSONAL_DIR`로 바꿀 수 있습니다.

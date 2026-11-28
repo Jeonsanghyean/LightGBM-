@@ -124,4 +124,7 @@ def test_country_experiments_never_touch_personal_or_mix_labels():
     text = pathlib.Path("src/experiments_country.py").read_text(encoding="utf-8")
     for word in ("PersonalStore", "personal.db", "CardFDS", "src.store"):
         assert word not in text
-    assert "concat" not in text  # 미국·한국 학습 데이터를 합치는 경로가 없음
+    # 미국·한국 학습 데이터를 합치는 경로가 없음. concat은 결과 표를 합치는 한 줄에만 허용
+    # (학습 행 출처는 tests/test_kr_experiments.py의 test_cross_country_trains_each_country_separately에서 확인)
+    lines = [l for l in text.splitlines() if "concat" in l]
+    assert len(lines) == 1 and "결과 표만 합침" in lines[0] and "kres[k]" in lines[0], lines
