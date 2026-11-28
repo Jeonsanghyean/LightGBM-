@@ -15,7 +15,7 @@ import streamlit as st
 from src import privacy
 from src.schema import validate
 from src.sources import personal
-from src.store import PersonalStore
+from src.store import FEEDBACK, PersonalStore
 
 store = PersonalStore()
 VIEW_COLS = {"transaction_date": "날짜", "transaction_time": "시각", "amount": "금액", "currency": "통화",
@@ -25,6 +25,7 @@ TARGET_KO = {"datetime": "날짜+시각(한 열)", "date": "날짜", "time": "�
              "merchant_name": "가맹점 이름", "merchant_address": "가맹점 주소", "transaction_type": "거래 유형",
              "transaction_status": "승인·취소", "card_alias": "카드 별칭"}
 TYPE_KO = {None: "선택 안 함", "online": "온라인", "offline": "오프라인"}
+UNCHECKED = "미확인"  # 화면 표시용. 저장소에는 기록하지 않는다
 
 
 
@@ -251,9 +252,30 @@ if section == "분석 실행":
                 "확인 권장(규칙)": res["rules"].map(lambda r: " / ".join(r)),
                 "비고": res["note"].fillna(""),
             })
-            st.dataframe(table, hide_index=True, width="stretch")
+            # [v2 변경 2026-11-28] 무엇을: 결과표에 "내 확인"(확인함/사기였음) 기록 칸 추가
+            #   왜: 이슈 3-4 피드백 기능 / 어떻게: 별도 feedback 테이블에 저장, 학습·점수 계산에는 쓰지 않음
+            fb = store.feedback().set_index("transaction_id")["status"]
+            table.insert(table.columns.get_loc("위험 수준") + 1, "내 확인",
+                         res["transaction_id"].map(fb).astype("string").fillna(UNCHECKED).to_numpy(dtype=object))
+            edited = st.data_editor(
+                table, hide_index=True, width="stretch", key="feedback_editor",
+                disabled=[c for c in table.columns if c != "내 확인"],
+                column_config={"내 확인": st.column_config.SelectboxColumn(
+                    "내 확인", options=[UNCHECKED, *FEEDBACK], required=True,
+                    help="확인함: 본인 결제가 맞음 · 사기였음: 본인이 하지 않은 결제")})
             st.caption("점수는 보정 전 모델 점수이며, 위험 수준은 미국 검증 구간에서 정한 비용별 임계값으로 나눴습니다. "
                        "‘판단 보류’ 거래는 점수 대신 규칙 기반 확인 항목만 봅니다.")
+            changed = {tid: (None if new == UNCHECKED else new) for tid, old_v, new in
+                       zip(res["transaction_id"], table["내 확인"], edited["내 확인"].fillna(UNCHECKED)) if old_v != new}
+            fc1, fc2 = st.columns([1, 3])
+            if fc1.button("확인 결과 저장", disabled=not changed):
+                store.set_feedback(changed)
+                st.session_state.pop("feedback_editor", None)  # 저장한 편집 내용이 다음 화면에 다시 적용되지 않게
+                flash(f"확인 결과 {len(changed)}건을 저장했습니다.")
+            counts = edited["내 확인"].fillna(UNCHECKED).value_counts()
+            fc2.caption("확인 결과: " + " · ".join(f"{k} {counts.get(k, 0)}건" for k in [*FEEDBACK, UNCHECKED])
+                        + ". 기록은 이 컴퓨터에만 남고 모델 학습에 쓰지 않습니다. 확인한 거래만 기록되므로 정확도로 해석하지 마세요.")
+            table = edited
 
             prof = risk.card_profile(rows)
             if len(prof):

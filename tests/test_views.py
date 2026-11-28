@@ -160,3 +160,19 @@ def test_lookup_personal_risk_before_and_after_scoring(project):
 
 def test_view_tests_never_touch_real_personal_store(project):
     assert PersonalStore().folder.resolve().is_relative_to(project.resolve())
+
+
+@pytest.mark.parametrize("with_feedback", [False, True])
+def test_personal_analysis_shows_saved_feedback(project, with_feedback):
+    """화면 6 분석 결과: 저장된 확인 결과가 '내 확인' 칸과 건수 문구에 나온다. 기록이 없어도 열린다."""
+    df = add_personal()
+    if with_feedback:
+        PersonalStore().set_feedback({df["transaction_id"].iloc[0]: "사기였음"})
+    at = AppTest.from_file(str(project / "app_v2.py"), default_timeout=60)
+    at.session_state["personal_section"] = "분석 실행"
+    at.run()
+    at.switch_page("views/personal.py").run()
+    next(b for b in at.button if b.label == "분석 실행").click().run()
+    assert not at.exception, [e.value for e in at.exception]
+    expect = ("사기였음 1건", "미확인 7건") if with_feedback else ("사기였음 0건", "미확인 8건")
+    assert any(all(e in c.value for e in expect) for c in at.caption)
