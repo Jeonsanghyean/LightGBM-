@@ -4,8 +4,8 @@ import json
 import pandas as pd
 import streamlit as st
 
-from views._common import (MISSING, PRECISION_KO, label_text, load, missing_notice, money, region_text, show,
-                           source_picker, time_text, type_text)
+from views._common import (MISSING, PRECISION_KO, label_text, load, missing_notice, money, region_text, risk_text,
+                           show, source_picker, time_text, type_text)
 
 MAX_ROWS = 5000
 st.session_state["_page"] = "lookup"
@@ -63,7 +63,7 @@ table = pd.DataFrame({
     "지역": view.apply(region_text, axis=1),
     "유형": view["transaction_type"].map(type_text),
     "실제 라벨": view["is_fraud"].map(label_text),
-    "위험도": view["risk_level"].map(lambda v: "미산출 (3주차)" if pd.isna(v) else v),
+    "위험도": view["risk_level"].map(lambda v: risk_text(None if pd.isna(v) else v, src)),
 })
 event = st.dataframe(table, hide_index=True, width="stretch", height=360, on_select="rerun",
                      selection_mode="single-row", key=f"tbl_{src}")
@@ -131,7 +131,11 @@ with k:
     st.markdown("**위험 정보**")
     st.markdown(f"- 실제 라벨: {label_text(r['is_fraud'])}"
                 + (f" · 유형 {r['fraud_type']}" if pd.notna(r.get('fraud_type')) else ""))
-    st.markdown("- 모델 위험도: 미산출 — 3주차(국가별 모델·개인 위험도)에서 추가됩니다.")
+    lvl = None if pd.isna(r.get("risk_level")) else r.get("risk_level")
+    score_txt = "" if pd.isna(r.get("raw_score")) else f" (점수 {float(r['raw_score']):.4f})"
+    st.markdown(f"- 모델 위험도: {risk_text(lvl, src)}{score_txt}")
+    if src == "us":
+        st.caption("미국은 원본 Test 구간만 v1 LightGBM 점수를 표시합니다 (화면 4와 같은 값·임계값).")
     feats = {"직전 시간대 결제 건수": r.get("count_prev_hour_bucket"), "같은 날 앞선 결제 건수": r.get("count_same_day_prior"),
              "24시간 내 같은 가맹점 결제": r.get("same_merchant_24h"), "새로운 지역 정도": r.get("region_novelty")}
     st.dataframe(pd.DataFrame({"특징": list(feats), "값": [show(v if pd.isna(v) else round(float(v), 3)) for v in feats.values()]}),
